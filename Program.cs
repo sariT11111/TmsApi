@@ -2,6 +2,12 @@ using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseDefaultServiceProvider(options =>
+{
+    options.ValidateScopes = true;
+    options.ValidateOnBuild = true;
+});
+
 builder.Services.AddControllers();
 
 builder.Services
@@ -9,6 +15,9 @@ builder.Services
     .AddScheme<AuthenticationSchemeOptions, DemoAuthenticationHandler>("Demo", null);
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.AddSingleton<EnrollmentWorker>();
 
 var app = builder.Build();
 
@@ -24,5 +33,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapGet("/api/enrollments/worker-smoke", (EnrollmentWorker worker) =>
+{
+    worker.ProcessBatch();
+    return Results.Ok("processed");
+});
 
 app.Run();
